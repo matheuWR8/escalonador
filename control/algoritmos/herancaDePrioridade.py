@@ -1,4 +1,6 @@
-from model.prioridade import Prioridade
+from control.algoritmos._base import trocar_contexto, finalizar_metricas
+from control.algoritmos.nomes import Algoritmo
+
 
 def heranca_prioridade(processos, ctx_time=0.5):
     tempo_atual = 0
@@ -9,7 +11,6 @@ def heranca_prioridade(processos, ctx_time=0.5):
     # Rastreamento de recursos e prioridades
     recursos = {}  # Mapa de processo -> tempo de liberação do recurso
     prioridade_original = {}  # Mapa de processo -> prioridade original
-    processo_bloqueado = None  # Processo que está esperando pelo recurso
 
     # Ordenação inicial por chegada e prioridade
     processos_ordenados = sorted(processos, key=lambda p: (p.chegada, -p.prioridade.numero))
@@ -22,17 +23,16 @@ def heranca_prioridade(processos, ctx_time=0.5):
         if processo_atual.chegada > tempo_atual:
             tempo_atual = processo_atual.chegada
 
-        # Verifica se há processos de maior prioridade querendo o recurso
-        for processo in processos_ordenados:
-            if processo.chegada <= tempo_atual and processo.prioridade.numero > processo_atual.prioridade.numero:
-                if processo_atual in recursos:  # Se o processo atual tem um recurso
-                    # Guarda prioridade original se ainda não guardada
-                    if processo_atual not in prioridade_original:
-                        prioridade_original[processo_atual] = processo_atual.prioridade.numero
-                    # Herda a prioridade mais alta
-                    processo_atual.prioridade.numero = processo.prioridade.numero
-                    processo_bloqueado = processo
-                    break
+        # Se há processos de maior prioridade concorrendo pelo recurso que o
+        # processo atual detém, ele herda a maior prioridade entre todos eles
+        bloqueadores = [
+            p for p in processos_ordenados
+            if p.chegada <= tempo_atual and p.prioridade.numero > processo_atual.prioridade.numero
+        ]
+        if bloqueadores and processo_atual in recursos:
+            if processo_atual not in prioridade_original:
+                prioridade_original[processo_atual] = processo_atual.prioridade.numero
+            processo_atual.prioridade.numero = max(p.prioridade.numero for p in bloqueadores)
 
         # Verifica se é hora de liberar algum recurso
         if processo_atual in recursos and tempo_atual >= recursos[processo_atual]:
@@ -42,14 +42,8 @@ def heranca_prioridade(processos, ctx_time=0.5):
                 del prioridade_original[processo_atual]
             # Libera o recurso
             del recursos[processo_atual]
-            # Desbloqueia o processo que estava esperando
-            if processo_bloqueado:
-                processo_bloqueado = None
 
-        # Adiciona tempo de troca de contexto se necessário
-        if ultimo_processo is not None and ultimo_processo != processo_atual and ctx_time > 0:
-            ctx_duracao = ultimo_processo.adicionar_troca_contexto(tempo_atual, tempo_atual + ctx_time)
-            tempo_atual += ctx_duracao
+        tempo_atual = trocar_contexto(ultimo_processo, processo_atual, tempo_atual, ctx_time, exigir_troca=True)
 
         # Executa por 1 unidade de tempo
         tempo_atual += processo_atual.adicionar_processamento(tempo_atual, tempo_atual + 1)
@@ -76,10 +70,7 @@ def heranca_prioridade(processos, ctx_time=0.5):
             -p.prioridade.numero,     # Depois por prioridade (maior primeiro)
             p.chegada                 # Por fim, por ordem de chegada
         ))
-        
+
         ultimo_processo = processo_atual
 
-    media_espera = total_espera / len(processos)
-    media_execucao = total_execucao / len(processos)
-    
-    return media_espera, media_execucao, "Herança de Prioridade"
+    return finalizar_metricas(total_espera, total_execucao, len(processos), Algoritmo.HERANCA_DE_PRIORIDADE.nome_exibicao)

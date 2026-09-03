@@ -1,6 +1,18 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class Prioridade:
-    def __init__(self, numero):
-        self.numero = numero
-        # Para manter compatibilidade com herança e inversão de prioridade
-        # alterna entre recursos A e B baseado em número par/ímpar
-        self.recurso = 'A' if numero % 2 == 0 else 'B'
+    numero: int
+
+    def __post_init__(self):
+        if not isinstance(self.numero, int):
+            raise TypeError("numero deve ser um inteiro.")
+        if self.numero < 0:
+            raise ValueError("numero deve ser não-negativo.")
+
+    @property
+    def recurso(self):
+        # Alterna entre recursos 'A' e 'B' com base na paridade do número.
+        # Property (não campo) porque herancaDePrioridade muta `numero` em runtime.
+        return 'A' if self.numero % 2 == 0 else 'B'

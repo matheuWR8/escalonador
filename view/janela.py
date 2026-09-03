@@ -1,8 +1,8 @@
-import copy
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from control import simular_escalonamento
+from control.algoritmos.nomes import Algoritmo
 from model import Processo
 from model.prioridade import Prioridade
 from view import grafico_processos
@@ -56,16 +56,21 @@ def editar_processo():
 
 def form_submit():
     try:
-        processos_submit = copy.deepcopy(processos)
         algoritmo = algoritmo_var.get()
         quantum = quantum_entry.get()
         ctx_time = float(ctx_entry.get())
 
-        media_execucao, media_espera, nome_processo = simular_escalonamento(processos_submit, algoritmo, quantum, ctx_time)
+        if algoritmo == Algoritmo.ROUND_ROBIN.value and (not quantum.strip().isdigit() or int(quantum) <= 0):
+            messagebox.showerror("Erro", "Informe um quantum inteiro maior que zero para o Round Robin.")
+            return
 
-        grafico_processos(processos_submit, media_execucao, media_espera, nome_processo)
+        media_execucao, media_espera, nome_processo, processos_simulados = simular_escalonamento(
+            processos, algoritmo, quantum, ctx_time
+        )
+
+        grafico_processos(processos_simulados, media_execucao, media_espera, nome_processo)
     except Exception as e:
-        messagebox.showerror("Erro", e)
+        messagebox.showerror("Erro", str(e))
 
 def centralizar_janela(janela, largura, altura):
     largura_tela = janela.winfo_screenwidth()

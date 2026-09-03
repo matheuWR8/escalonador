@@ -1,4 +1,11 @@
+from control.algoritmos._base import trocar_contexto, finalizar_metricas
+from control.algoritmos.nomes import Algoritmo
+
+
 def round_robin(processos, quantum=2, ctx_time=0.5):
+    if quantum <= 0:
+        raise ValueError("O quantum deve ser maior que zero.")
+
     tempo_atual = 0
     total_espera = 0
     total_execucao = 0
@@ -9,7 +16,7 @@ def round_robin(processos, quantum=2, ctx_time=0.5):
 
     while processos_ordenados:
         for processo in processos_ordenados:
-            if(processo.chegada <= tempo_atual and processo not in fila):
+            if processo.chegada <= tempo_atual and processo not in fila:
                 fila.append(processo)
 
         if not fila:
@@ -17,11 +24,9 @@ def round_robin(processos, quantum=2, ctx_time=0.5):
             continue
 
         processo_atual = fila.pop(0)
-        processos_ordenados.remove(processo_atual)        # Adiciona tempo de troca de contexto se necessário
-        if ultimo_processo is not None and ultimo_processo != processo_atual and ctx_time > 0:
-            # Apenas o processo que está saindo registra a troca de contexto
-            ctx_duracao = ultimo_processo.adicionar_troca_contexto(tempo_atual, tempo_atual + ctx_time)
-            tempo_atual += ctx_duracao
+        processos_ordenados.remove(processo_atual)
+
+        tempo_atual = trocar_contexto(ultimo_processo, processo_atual, tempo_atual, ctx_time, exigir_troca=True)
 
         tempo_atual += processo_atual.adicionar_processamento(tempo_atual, tempo_atual + quantum)
 
@@ -33,7 +38,4 @@ def round_robin(processos, quantum=2, ctx_time=0.5):
 
         ultimo_processo = processo_atual
 
-    media_espera = total_espera / len(processos)
-    media_execucao = total_execucao / len(processos)
-    
-    return media_espera, media_execucao, "Round Robin"
+    return finalizar_metricas(total_espera, total_execucao, len(processos), Algoritmo.ROUND_ROBIN.nome_exibicao)

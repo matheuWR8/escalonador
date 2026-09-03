@@ -1,3 +1,7 @@
+from control.algoritmos._base import avancar_tempo_para_chegada, trocar_contexto, selecionar_proximo, finalizar_metricas
+from control.algoritmos.nomes import Algoritmo
+
+
 def srtf(processos, ctx_time=0.5):
     tempo_atual = 0
     total_espera = 0
@@ -7,18 +11,10 @@ def srtf(processos, ctx_time=0.5):
     processos_ordenados = sorted(processos, key=lambda p: (p.chegada, p.tempo_restante))
 
     while processos_ordenados:
-        processo_atual = processos_ordenados[0]
+        tempo_atual = avancar_tempo_para_chegada(processos_ordenados[0], tempo_atual)
+        processo_atual = selecionar_proximo(processos_ordenados, tempo_atual, lambda p: p.tempo_restante)
 
-        if processo_atual.chegada > tempo_atual:
-            tempo_atual += processo_atual.chegada
-
-        for processo in processos_ordenados:
-            if processo.chegada <= tempo_atual and processo.tempo_restante < processo_atual.tempo_restante:
-                processo_atual = processo        # Adiciona tempo de troca de contexto se necessário e se houve mudança de processo
-        if ultimo_processo is not None and ultimo_processo != processo_atual and ctx_time > 0:
-            # Apenas o processo que está saindo registra a troca de contexto
-            ctx_duracao = ultimo_processo.adicionar_troca_contexto(tempo_atual, tempo_atual + ctx_time)
-            tempo_atual += ctx_duracao
+        tempo_atual = trocar_contexto(ultimo_processo, processo_atual, tempo_atual, ctx_time, exigir_troca=True)
 
         tempo_atual += processo_atual.adicionar_processamento(tempo_atual, tempo_atual + 1)
 
@@ -29,7 +25,4 @@ def srtf(processos, ctx_time=0.5):
 
         ultimo_processo = processo_atual
 
-    media_espera = total_espera / len(processos)
-    media_execucao = total_execucao / len(processos)
-    
-    return media_espera, media_execucao, "SRTF"
+    return finalizar_metricas(total_espera, total_execucao, len(processos), Algoritmo.SRTF.nome_exibicao)

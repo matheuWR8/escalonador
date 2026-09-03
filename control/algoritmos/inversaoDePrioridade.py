@@ -1,4 +1,12 @@
-from model.prioridade import Prioridade
+from control.algoritmos._base import avancar_tempo_para_chegada, trocar_contexto, finalizar_metricas
+from control.algoritmos.nomes import Algoritmo
+
+
+def _pode_preemptar_por_recurso(processo, dono_a, dono_b):
+    if processo.prioridade.recurso == 'A':
+        return dono_a is None or processo == dono_a
+    return dono_b is None or processo == dono_b
+
 
 def inversao_prioridade(processos, ctx_time=0.5):
     tempo_atual = 0
@@ -18,22 +26,18 @@ def inversao_prioridade(processos, ctx_time=0.5):
         else:
             processo_with_recurso_b = processo_atual
 
-        if processo_atual.chegada > tempo_atual:
-            tempo_atual += processo_atual.chegada
+        tempo_atual = avancar_tempo_para_chegada(processo_atual, tempo_atual)
 
         for processo in processos_ordenados:
-            if processo.chegada <= tempo_atual and processo.prioridade.numero > processo_atual.prioridade.numero and \
-                (((processo.prioridade.recurso == 'A' and processo_with_recurso_a == None) or \
-                (processo.prioridade.recurso == 'B' and processo_with_recurso_b == None)) or \
-                processo == processo_with_recurso_a or processo == processo_with_recurso_b) :
-                processo_atual = processo        # Adiciona tempo de troca de contexto se necessário e se houve mudança de processo
-        if ultimo_processo is not None and ultimo_processo != processo_atual and ctx_time > 0:
-            # Apenas o processo que está saindo registra a troca de contexto
-            ctx_duracao = ultimo_processo.adicionar_troca_contexto(tempo_atual, tempo_atual + ctx_time)
-            tempo_atual += ctx_duracao
-        
+            if (processo.chegada <= tempo_atual
+                    and processo.prioridade.numero > processo_atual.prioridade.numero
+                    and _pode_preemptar_por_recurso(processo, processo_with_recurso_a, processo_with_recurso_b)):
+                processo_atual = processo
+
+        tempo_atual = trocar_contexto(ultimo_processo, processo_atual, tempo_atual, ctx_time, exigir_troca=True)
+
         tempo_atual += processo_atual.adicionar_processamento(tempo_atual, tempo_atual + 1)
-                
+
         if processo_atual.tempo_restante == 0:
             total_espera += processo_atual.get_espera()
             total_execucao += processo_atual.get_turnaround()
@@ -42,10 +46,7 @@ def inversao_prioridade(processos, ctx_time=0.5):
             else:
                 processo_with_recurso_b = None
             processos_ordenados.remove(processo_atual)
-            
+
         ultimo_processo = processo_atual
 
-    media_espera = total_espera / len(processos)
-    media_execucao = total_execucao / len(processos)
-    
-    return media_espera, media_execucao, "Inversão de Prioridade"
+    return finalizar_metricas(total_espera, total_execucao, len(processos), Algoritmo.INVERSAO_DE_PRIORIDADE.nome_exibicao)

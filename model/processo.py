@@ -1,27 +1,40 @@
+from dataclasses import dataclass, field
+
 from model.prioridade import Prioridade
 
+
+@dataclass
 class Periodo:
-    def __init__(self, inicio, fim, tipo="Execução"):
-        self.inicio = inicio
-        self.fim = fim
-        self.tipo = tipo  # "Execução" ou "CTX"
-    
+    inicio: float
+    fim: float
+    tipo: str = "Execução"  # "Execução" ou "CTX"
+
     def get_duracao(self):
         return self.fim - self.inicio
 
     def contem_instante(self, instante, epsilon=0.0001):
         return self.inicio - epsilon <= instante < self.fim + epsilon
 
+
+@dataclass(eq=False)
 class Processo:
-    def __init__(self, id, chegada, duracao, prioridade : Prioridade):
-        self.id = id
-        self.chegada = chegada
-        self.duracao = duracao
-        self.prioridade = prioridade
-        self.tempo_restante = duracao
-        self.processamentos = []
-        self.ultimo_contexto = None  # Para rastrear último processo em execução
-    
+    id: int
+    chegada: float
+    duracao: float
+    prioridade: Prioridade
+    tempo_restante: float = field(init=False)
+    processamentos: list = field(default_factory=list, init=False, repr=False)
+    ultimo_contexto: object = field(default=None, init=False, repr=False)
+
+    def __post_init__(self):
+        if not isinstance(self.prioridade, Prioridade):
+            raise TypeError("prioridade deve ser uma instância de Prioridade.")
+        if self.chegada < 0:
+            raise ValueError("chegada deve ser não-negativa.")
+        if self.duracao <= 0:
+            raise ValueError("duracao deve ser maior que zero.")
+        self.tempo_restante = self.duracao
+
     def adicionar_processamento(self, inicio, fim):
         if self.tempo_restante - (fim - inicio) < 0:
             fim = inicio + self.tempo_restante
@@ -34,16 +47,16 @@ class Processo:
     def adicionar_troca_contexto(self, inicio, fim):
         self.processamentos.append(Periodo(inicio, fim, "CTX"))
         return fim - inicio
-    
+
     def get_turnaround(self):
         if not self.processamentos:
             return 0
-        
+
         # Filtra apenas os períodos de execução
         periodos_execucao = [p for p in self.processamentos if p.tipo == "Execução"]
         if not periodos_execucao:
             return 0
-        
+
         # Turnaround = término da última execução - chegada
         ultimo_periodo = periodos_execucao[-1]
         return ultimo_periodo.fim - self.chegada
@@ -51,12 +64,12 @@ class Processo:
     def get_espera(self):
         if not self.processamentos:
             return 0
-            
+
         # Filtra apenas os períodos de execução
         periodos_execucao = [p for p in self.processamentos if p.tipo == "Execução"]
         if not periodos_execucao:
             return 0
-            
+
         # Espera = início da primeira execução - chegada
         primeiro_periodo = periodos_execucao[0]
         return primeiro_periodo.inicio - self.chegada
@@ -64,18 +77,15 @@ class Processo:
     def verificar_estado(self, instante, epsilon=0.0001):
         if not self.processamentos:
             return "Desconhecido"
-        
+
         if instante < self.chegada - epsilon:
             return "Antes da chegada"
-        
+
         if instante >= self.processamentos[-1].fim - epsilon:
             return "Após a chegada"
 
         for periodo in self.processamentos:
             if periodo.contem_instante(instante, epsilon):
                 return periodo.tipo
-            
+
         return "Espera"
-    
-    def __str__(self):
-        return f'Processo(id={self.id})'

@@ -68,3 +68,4 @@ def grafico_processos(processos, media_execucao, media_espera, nome_processo):
 
     centralizar_grafico(fig)
     plt.show()
+    plt.close(fig)
