@@ -14,7 +14,11 @@ def adicionar_processo():
         chegada = int(entrada_chegada.get())
         duracao = int(entrada_duracao.get())
         prioridade_num = int(entrada_prioridade.get())
-        
+    except ValueError:
+        messagebox.showerror("Erro", "Valores inválidos. Use apenas números inteiros.")
+        return
+
+    try:
         novo_id = max(processo.id for processo in processos) + 1 if processos else 1
 
         processo = Processo(novo_id, chegada, duracao, Prioridade(prioridade_num))
@@ -26,7 +30,7 @@ def adicionar_processo():
         entrada_duracao.delete(0, tk.END)
         entrada_prioridade.delete(0, tk.END)
     except ValueError as e:
-        messagebox.showerror("Erro", "Valores inválidos. Use apenas números inteiros positivos.")
+        messagebox.showerror("Erro", str(e))
 
 def remover_processo():
     if len(lista_processos.curselection()):
@@ -82,7 +86,7 @@ def centralizar_janela(janela, largura, altura):
     janela.geometry(f'{largura}x{altura}+{pos_x}+{pos_y}')
 
 def habilitar_quantum():
-    if algoritmo_var.get() == 3:
+    if algoritmo_var.get() == Algoritmo.ROUND_ROBIN.value:
         quantum_label.pack(padx=20, pady=5)
         quantum_entry.pack(padx=20, pady=5)
     else:
