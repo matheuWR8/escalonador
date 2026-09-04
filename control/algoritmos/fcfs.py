@@ -1,4 +1,4 @@
-from control.algoritmos._base import trocar_contexto, finalizar_metricas
+from control.algoritmos._base import avancar_tempo_para_chegada, trocar_contexto, finalizar_metricas
 from control.algoritmos.nomes import Algoritmo
 
 
@@ -11,9 +11,7 @@ def fcfs(processos, ctx_time=0.5):
     processos_ordenados = sorted(processos, key=lambda p: p.chegada)
 
     for processo in processos_ordenados:
-        if processo.chegada > tempo_atual:
-            tempo_atual = processo.chegada
-
+        tempo_atual = avancar_tempo_para_chegada(processos_ordenados[0], tempo_atual)
         tempo_atual = trocar_contexto(ultimo_processo, processo, tempo_atual, ctx_time, exigir_troca=False)
 
         tempo_atual += processo.adicionar_processamento(tempo_atual, tempo_atual + processo.duracao)
