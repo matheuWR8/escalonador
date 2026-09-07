@@ -62,6 +62,14 @@ class Processo:
         return ultimo_periodo.fim - self.chegada
 
     def get_espera(self):
+        # T_w = T - t_p: tempo perdido na fila de prontas, em suspensão por
+        # recurso e em trocas de contexto (C8). Não é o tempo até a 1ª
+        # execução — ver get_tempo_ate_primeira_execucao.
+        if not self.processamentos:
+            return 0
+        return self.get_turnaround() - self.duracao
+
+    def get_tempo_ate_primeira_execucao(self):
         if not self.processamentos:
             return 0
 
@@ -70,7 +78,6 @@ class Processo:
         if not periodos_execucao:
             return 0
 
-        # Espera = início da primeira execução - chegada
         primeiro_periodo = periodos_execucao[0]
         return primeiro_periodo.inicio - self.chegada
 
