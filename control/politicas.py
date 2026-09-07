@@ -7,10 +7,6 @@ from control.algoritmos.nomes import Algoritmo
 
 @dataclass(frozen=True)
 class Politica:
-    """Política de seleção de um algoritmo. O mecanismo (control/motor.py) é
-    único; cada algoritmo só declara como escolhe a próxima tarefa e se usa
-    preempção/quantum."""
-
     algoritmo: Algoritmo
     chave_selecao: Callable
     preemptivo: bool
