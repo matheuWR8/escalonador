@@ -39,8 +39,9 @@ class Processo:
             raise ValueError("chegada deve ser não-negativa.")
         if self.duracao <= 0:
             raise ValueError("duracao deve ser maior que zero.")
-        if self.secao_critica is not None and (self.secao_critica.inicio < 0 or self.secao_critica.duracao > self.duracao):
-            raise ValueError("seção crítica deve estar contida na duração do processo.")
+        if self.secao_critica is not None:
+            if self.secao_critica.inicio_execucao < 0 or self.secao_critica.duracao + self.secao_critica.inicio_execucao > self.duracao:
+                raise ValueError("seção crítica deve estar contida na duração do processo.")
         self.tempo_restante = self.duracao
 
     def adicionar_processamento(self, inicio, fim):

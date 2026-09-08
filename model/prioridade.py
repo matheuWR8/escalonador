@@ -10,9 +10,3 @@ class Prioridade:
             raise TypeError("numero deve ser um inteiro.")
         if self.numero < 0:
             raise ValueError("numero deve ser não-negativo.")
-
-    @property
-    def recurso(self):
-        # Alterna entre recursos 'A' e 'B' com base na paridade do número.
-        # Property (não campo) porque herancaDePrioridade muta `numero` em runtime.
-        return 'A' if self.numero % 2 == 0 else 'B'
