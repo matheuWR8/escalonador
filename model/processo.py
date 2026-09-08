@@ -15,6 +15,11 @@ class Periodo:
     def contem_instante(self, instante, epsilon=0.0001):
         return self.inicio - epsilon <= instante < self.fim + epsilon
 
+@dataclass
+class SecaoCritica:
+    recurso: str
+    inicio_execucao: int
+    duracao: int
 
 @dataclass(eq=False)
 class Processo:
@@ -25,6 +30,7 @@ class Processo:
     tempo_restante: float = field(init=False)
     processamentos: list = field(default_factory=list, init=False, repr=False)
     ultimo_contexto: object = field(default=None, init=False, repr=False)
+    secao_critica: SecaoCritica | None = None
 
     def __post_init__(self):
         if not isinstance(self.prioridade, Prioridade):
@@ -33,6 +39,8 @@ class Processo:
             raise ValueError("chegada deve ser não-negativa.")
         if self.duracao <= 0:
             raise ValueError("duracao deve ser maior que zero.")
+        if self.secao_critica is not None and (self.secao_critica.inicio < 0 or self.secao_critica.duracao > self.duracao):
+            raise ValueError("seção crítica deve estar contida na duração do processo.")
         self.tempo_restante = self.duracao
 
     def adicionar_processamento(self, inicio, fim):
