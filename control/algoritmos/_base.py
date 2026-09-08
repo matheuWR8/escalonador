@@ -19,3 +19,31 @@ def selecionar_proximo(processos_ordenados, tempo_atual, chave):
 
 def finalizar_metricas(total_espera, total_execucao, quantidade, nome):
     return total_espera / quantidade, total_execucao / quantidade, nome
+
+
+def chave_desempate(processo):
+    return (processo.chegada, processo.id)
+
+
+def trocar_contexto_padrao(ultimo_processo, processo_atual, tempo_atual, ctx_time):
+    if ctx_time <= 0:
+        return tempo_atual
+    if ultimo_processo is not None and ultimo_processo == processo_atual:
+        return tempo_atual
+
+    ctx_duracao = processo_atual.adicionar_troca_contexto(tempo_atual, tempo_atual + ctx_time)
+    return tempo_atual + ctx_duracao
+
+
+def despachar_com_quantum(ultimo_processo, processo_atual, tempo_atual, quantum, ctx_time):
+    ha_troca = ultimo_processo is None or ultimo_processo != processo_atual
+
+    if ha_troca and ctx_time > 0:
+        tempo_atual = trocar_contexto_padrao(ultimo_processo, processo_atual, tempo_atual, ctx_time)
+        orcamento = quantum - ctx_time
+    else:
+        orcamento = quantum
+
+    fim = tempo_atual + min(orcamento, processo_atual.tempo_restante)
+    tempo_atual += processo_atual.adicionar_processamento(tempo_atual, fim)
+    return tempo_atual

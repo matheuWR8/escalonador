@@ -15,6 +15,11 @@ class Periodo:
     def contem_instante(self, instante, epsilon=0.0001):
         return self.inicio - epsilon <= instante < self.fim + epsilon
 
+@dataclass
+class SecaoCritica:
+    recurso: str
+    inicio_execucao: int
+    duracao: int
 
 @dataclass(eq=False)
 class Processo:
@@ -25,6 +30,7 @@ class Processo:
     tempo_restante: float = field(init=False)
     processamentos: list = field(default_factory=list, init=False, repr=False)
     ultimo_contexto: object = field(default=None, init=False, repr=False)
+    secao_critica: SecaoCritica | None = None
 
     def __post_init__(self):
         if not isinstance(self.prioridade, Prioridade):
@@ -33,6 +39,9 @@ class Processo:
             raise ValueError("chegada deve ser não-negativa.")
         if self.duracao <= 0:
             raise ValueError("duracao deve ser maior que zero.")
+        if self.secao_critica is not None:
+            if self.secao_critica.inicio_execucao < 0 or self.secao_critica.duracao + self.secao_critica.inicio_execucao > self.duracao:
+                raise ValueError("seção crítica deve estar contida na duração do processo.")
         self.tempo_restante = self.duracao
 
     def adicionar_processamento(self, inicio, fim):
@@ -62,6 +71,14 @@ class Processo:
         return ultimo_periodo.fim - self.chegada
 
     def get_espera(self):
+        # T_w = T - t_p: tempo perdido na fila de prontas, em suspensão por
+        # recurso e em trocas de contexto (C8). Não é o tempo até a 1ª
+        # execução — ver get_tempo_ate_primeira_execucao.
+        if not self.processamentos:
+            return 0
+        return self.get_turnaround() - self.duracao
+
+    def get_tempo_ate_primeira_execucao(self):
         if not self.processamentos:
             return 0
 
@@ -70,7 +87,6 @@ class Processo:
         if not periodos_execucao:
             return 0
 
-        # Espera = início da primeira execução - chegada
         primeiro_periodo = periodos_execucao[0]
         return primeiro_periodo.inicio - self.chegada
 
