@@ -31,6 +31,8 @@ def simular_escalonamento(processos, algoritmo, quantum_entry=0, ctx_time=0.5):
         quantum = int(quantum_entry)
         if quantum <= 0:
             raise ValueError("O quantum do Round Robin deve ser maior que zero.")
+        if quantum < ctx_time:
+            raise ValueError("O quantum do Round Robin não pode ser maior que o tempo de contexto.")
 
     processos_simulados = copy.deepcopy(processos)
     media_espera, media_execucao, nome_processo = executar(processos_simulados, quantum, float(ctx_time))
