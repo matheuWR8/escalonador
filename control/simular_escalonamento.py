@@ -1,24 +1,24 @@
 import copy
 
 from control.algoritmos.nomes import Algoritmo
-from control.algoritmos.inversaoDePrioridade import inversao_prioridade
-from control.algoritmos.herancaDePrioridade import heranca_prioridade
 from control.motor import simular as simular_motor
 from control.politicas import POLITICAS
 
 _DISPATCH = {
-    Algoritmo.FCFS.value: lambda p, q, c: simular_motor(p, POLITICAS[Algoritmo.FCFS], q, c),
-    Algoritmo.SJF.value: lambda p, q, c: simular_motor(p, POLITICAS[Algoritmo.SJF], q, c),
-    Algoritmo.ROUND_ROBIN.value: lambda p, q, c: simular_motor(p, POLITICAS[Algoritmo.ROUND_ROBIN], q, c),
-    Algoritmo.SRTF.value: lambda p, q, c: simular_motor(p, POLITICAS[Algoritmo.SRTF], q, c),
-    Algoritmo.PRIORIDADE_COOPERATIVO.value: lambda p, q, c: simular_motor(p, POLITICAS[Algoritmo.PRIORIDADE_COOPERATIVO], q, c),
-    Algoritmo.PRIORIDADE_PREEMPTIVO.value: lambda p, q, c: simular_motor(p, POLITICAS[Algoritmo.PRIORIDADE_PREEMPTIVO], q, c),
-    Algoritmo.INVERSAO_DE_PRIORIDADE.value: lambda p, q, c: inversao_prioridade(p, c),
-    Algoritmo.HERANCA_DE_PRIORIDADE.value: lambda p, q, c: heranca_prioridade(p, c),
+    Algoritmo.FCFS.value: lambda p, q, c, a: simular_motor(p, POLITICAS[Algoritmo.FCFS], q, c),
+    Algoritmo.SJF.value: lambda p, q, c, a: simular_motor(p, POLITICAS[Algoritmo.SJF], q, c),
+    Algoritmo.ROUND_ROBIN.value: lambda p, q, c, a: simular_motor(p, POLITICAS[Algoritmo.ROUND_ROBIN], q, c),
+    Algoritmo.SRTF.value: lambda p, q, c, a: simular_motor(p, POLITICAS[Algoritmo.SRTF], q, c),
+    Algoritmo.PRIORIDADE_COOPERATIVO.value: lambda p, q, c, a: simular_motor(
+        p, POLITICAS[Algoritmo.PRIORIDADE_COOPERATIVO], q, c, a
+    ),
+    Algoritmo.PRIORIDADE_PREEMPTIVO.value: lambda p, q, c, a: simular_motor(
+        p, POLITICAS[Algoritmo.PRIORIDADE_PREEMPTIVO], q, c
+    ),
 }
 
 
-def simular_escalonamento(processos, algoritmo, quantum_entry=0, ctx_time=0.5):
+def simular_escalonamento(processos, algoritmo, quantum_entry=0, ctx_time=0.5, alfa=0):
     if not processos:
         raise ValueError("Nenhum processo foi adicionado.")
 
@@ -31,10 +31,10 @@ def simular_escalonamento(processos, algoritmo, quantum_entry=0, ctx_time=0.5):
         quantum = int(quantum_entry)
         if quantum <= 0:
             raise ValueError("O quantum do Round Robin deve ser maior que zero.")
-        if quantum < ctx_time:
-            raise ValueError("O quantum do Round Robin não pode ser maior que o tempo de contexto.")
+        if quantum <= ctx_time:
+            raise ValueError("O quantum deve ser maior que o tempo de troca de contexto.")
 
     processos_simulados = copy.deepcopy(processos)
-    media_espera, media_execucao, nome_processo = executar(processos_simulados, quantum, float(ctx_time))
+    media_espera, media_execucao, nome_processo = executar(processos_simulados, quantum, float(ctx_time), alfa)
 
     return media_execucao, media_espera, nome_processo, processos_simulados

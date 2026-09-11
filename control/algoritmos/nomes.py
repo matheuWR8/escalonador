@@ -8,8 +8,6 @@ class Algoritmo(Enum):
     SRTF = 4
     PRIORIDADE_COOPERATIVO = 5
     PRIORIDADE_PREEMPTIVO = 6
-    INVERSAO_DE_PRIORIDADE = 7
-    HERANCA_DE_PRIORIDADE = 8
 
     @property
     def nome_exibicao(self):
@@ -20,6 +18,4 @@ class Algoritmo(Enum):
             Algoritmo.SRTF: "SRTF",
             Algoritmo.PRIORIDADE_COOPERATIVO: "Prioridade Cooperativo",
             Algoritmo.PRIORIDADE_PREEMPTIVO: "Prioridade Preemptivo",
-            Algoritmo.INVERSAO_DE_PRIORIDADE: "Inversão de Prioridade",
-            Algoritmo.HERANCA_DE_PRIORIDADE: "Herança de Prioridade",
         }[self]
