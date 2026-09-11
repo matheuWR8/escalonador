@@ -4,14 +4,19 @@ from control.algoritmos._base import (
     trocar_contexto_padrao,
     despachar_com_quantum,
 )
+from control.politicas import chave_prioridade_com_envelhecimento
 
 
-def simular(processos, politica, quantum, ctx_time):
+def simular(processos, politica, quantum, ctx_time, alfa=0):
     if politica.usa_quantum:
         total_espera, total_execucao = _simular_round_robin(processos, quantum, ctx_time)
     else:
+        chave_selecao = politica.chave_selecao
+        if alfa and politica.suporta_envelhecimento:
+            chave_selecao = chave_prioridade_com_envelhecimento(alfa)
+
         total_espera, total_execucao = _simular_por_chave(
-            processos, politica.chave_selecao, politica.preemptivo, ctx_time
+            processos, chave_selecao, politica.preemptivo, ctx_time
         )
 
     quantidade = len(processos)

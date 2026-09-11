@@ -14,14 +14,16 @@ def trocar_contexto(ultimo_processo, processo_atual, tempo_atual, ctx_time, exig
 
 def selecionar_proximo(processos_ordenados, tempo_atual, chave):
     candidatos = [p for p in processos_ordenados if p.chegada <= tempo_atual]
-    return min(candidatos, key=chave) if candidatos else processos_ordenados[0]
+    if not candidatos:
+        return processos_ordenados[0]
+    return min(candidatos, key=lambda p: chave(p, tempo_atual))
 
 
 def finalizar_metricas(total_espera, total_execucao, quantidade, nome):
     return total_espera / quantidade, total_execucao / quantidade, nome
 
 
-def chave_desempate(processo):
+def chave_desempate(processo, tempo_atual=None):
     return (processo.chegada, processo.id)
 
 
