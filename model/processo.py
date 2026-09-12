@@ -7,7 +7,7 @@ from model.prioridade import Prioridade
 class Periodo:
     inicio: float
     fim: float
-    tipo: str = "Execução"  # "Execução" ou "CTX"
+    tipo: str = "Execução"  # "Execução", "CTX" ou "Suspensa"
 
     def get_duracao(self):
         return self.fim - self.inicio

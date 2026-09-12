@@ -12,6 +12,7 @@ class Politica:
     preemptivo: bool
     usa_quantum: bool = False
     suporta_envelhecimento: bool = False
+    suporta_recursos: bool = False
 
 
 def _chave_sjf(p, tempo_atual=None):
@@ -48,5 +49,7 @@ POLITICAS = {
     Algoritmo.PRIORIDADE_COOPERATIVO: Politica(
         Algoritmo.PRIORIDADE_COOPERATIVO, _chave_prioridade, preemptivo=False, suporta_envelhecimento=True
     ),
-    Algoritmo.PRIORIDADE_PREEMPTIVO: Politica(Algoritmo.PRIORIDADE_PREEMPTIVO, _chave_prioridade, preemptivo=True),
+    Algoritmo.PRIORIDADE_PREEMPTIVO: Politica(
+        Algoritmo.PRIORIDADE_PREEMPTIVO, _chave_prioridade, preemptivo=True, suporta_recursos=True
+    ),
 }
