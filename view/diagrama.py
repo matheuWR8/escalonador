@@ -1,6 +1,7 @@
 COR_EXECUCAO = "#1E90FF"
 COR_CTX = "#FFD700"
 COR_ESPERA = "#FF6347"
+COR_SUSPENSA = "#A9A9A9"
 COR_GRADE = "#E0E0E0"
 
 ALTURA_LINHA = 32
@@ -45,10 +46,17 @@ def desenhar_diagrama(canvas, processos):
 
             x0 = MARGEM_ESQUERDA + periodo.inicio * PIXELS_POR_UNIDADE
             x1 = MARGEM_ESQUERDA + periodo.fim * PIXELS_POR_UNIDADE
-            cor = COR_EXECUCAO if periodo.tipo == "Execução" else COR_CTX
+            if periodo.tipo == "Execução":
+                cor = COR_EXECUCAO
+            elif periodo.tipo == "CTX":
+                cor = COR_CTX
+            else:
+                cor = COR_SUSPENSA
             canvas.create_rectangle(x0, y0, x1, y1, fill=cor, outline=cor)
             if periodo.tipo == "CTX" and (x1 - x0) > 14:
                 canvas.create_text((x0 + x1) / 2, y_meio, text="CTX", font=("TkDefaultFont", 7))
+            elif periodo.tipo == "Suspensa" and (x1 - x0) > 24:
+                canvas.create_text((x0 + x1) / 2, y_meio, text="SUSP", font=("TkDefaultFont", 7))
 
         x_metricas = MARGEM_ESQUERDA + largura_grafico + MARGEM_METRICAS
         texto = f"T={processo.get_turnaround():.1f}  T_w={processo.get_espera():.1f}"

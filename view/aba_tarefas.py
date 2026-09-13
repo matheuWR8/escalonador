@@ -4,6 +4,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 from control import carregar_cenario, salvar_cenario, sortear_tarefas
 from model import Processo
 from model.prioridade import Prioridade
+from model.processo import SecaoCritica
 
 
 def construir(notebook, estado):
@@ -24,9 +25,30 @@ def construir(notebook, estado):
     entrada_prioridade = ttk.Entry(form_frame, width=10, justify="center")
     entrada_prioridade.grid(row=1, column=2, padx=5)
 
-    colunas = ("id", "chegada", "duracao", "prioridade")
+    secao_var = tk.BooleanVar(value=False)
+    secao_frame = ttk.LabelFrame(frame, text="Seção crítica (opcional — R5)")
+    secao_frame.pack(padx=10, pady=(0, 10), fill="x")
+
+    ttk.Checkbutton(secao_frame, text="Esta tarefa declara seção crítica", variable=secao_var).grid(
+        row=0, column=0, columnspan=3, sticky="w", padx=5, pady=(5, 2)
+    )
+
+    ttk.Label(secao_frame, text="Recurso:").grid(row=1, column=0, padx=5)
+    entrada_recurso = ttk.Entry(secao_frame, width=10, justify="center")
+    entrada_recurso.insert(0, "R")
+    entrada_recurso.grid(row=2, column=0, padx=5, pady=(0, 5))
+
+    ttk.Label(secao_frame, text="Início (unid. executadas):").grid(row=1, column=1, padx=5)
+    entrada_inicio_sc = ttk.Entry(secao_frame, width=10, justify="center")
+    entrada_inicio_sc.grid(row=2, column=1, padx=5, pady=(0, 5))
+
+    ttk.Label(secao_frame, text="Duração:").grid(row=1, column=2, padx=5)
+    entrada_duracao_sc = ttk.Entry(secao_frame, width=10, justify="center")
+    entrada_duracao_sc.grid(row=2, column=2, padx=5, pady=(0, 5))
+
+    colunas = ("id", "chegada", "duracao", "prioridade", "recurso")
     tabela = ttk.Treeview(frame, columns=colunas, show="headings", height=10)
-    for col, titulo in zip(colunas, ("ID", "Chegada", "Duração", "Prioridade")):
+    for col, titulo in zip(colunas, ("ID", "Chegada", "Duração", "Prioridade", "Seção crítica")):
         tabela.heading(col, text=titulo)
         tabela.column(col, anchor="center", width=90)
     tabela.pack(padx=10, pady=10, fill="x")
@@ -34,12 +56,41 @@ def construir(notebook, estado):
     def atualizar_tabela():
         tabela.delete(*tabela.get_children())
         for p in estado.tarefas:
-            tabela.insert("", "end", iid=str(p.id), values=(p.id, p.chegada, p.duracao, p.prioridade.numero))
+            if p.secao_critica is not None:
+                sc = p.secao_critica
+                texto_sc = f"{sc.recurso} [{sc.inicio_execucao},{sc.inicio_execucao + sc.duracao})"
+            else:
+                texto_sc = "-"
+            tabela.insert(
+                "", "end", iid=str(p.id),
+                values=(p.id, p.chegada, p.duracao, p.prioridade.numero, texto_sc),
+            )
 
     def limpar_formulario():
         entrada_chegada.delete(0, tk.END)
         entrada_duracao.delete(0, tk.END)
         entrada_prioridade.delete(0, tk.END)
+        entrada_recurso.delete(0, tk.END)
+        entrada_recurso.insert(0, "R")
+        entrada_inicio_sc.delete(0, tk.END)
+        entrada_duracao_sc.delete(0, tk.END)
+        secao_var.set(False)
+
+    def ler_secao_critica():
+        """Retorna a SecaoCritica declarada no formulário, ou None se a
+        checkbox não estiver marcada. Levanta ValueError para entrada não
+        numérica nos campos de início/duração."""
+        if not secao_var.get():
+            return None
+        recurso = entrada_recurso.get().strip()
+        if not recurso:
+            raise ValueError("Informe o nome do recurso da seção crítica.")
+        try:
+            inicio = int(entrada_inicio_sc.get())
+            duracao = int(entrada_duracao_sc.get())
+        except ValueError:
+            raise ValueError("Início e duração da seção crítica devem ser números inteiros.")
+        return SecaoCritica(recurso, inicio, duracao)
 
     def adicionar():
         try:
@@ -51,8 +102,14 @@ def construir(notebook, estado):
             return
 
         try:
+            secao_critica = ler_secao_critica()
+        except ValueError as e:
+            messagebox.showerror("Erro", str(e))
+            return
+
+        try:
             novo_id = max((p.id for p in estado.tarefas), default=0) + 1
-            processo = Processo(novo_id, chegada, duracao, Prioridade(prioridade_num))
+            processo = Processo(novo_id, chegada, duracao, Prioridade(prioridade_num), secao_critica=secao_critica)
             estado.tarefas.append(processo)
             atualizar_tabela()
             limpar_formulario()
@@ -84,6 +141,20 @@ def construir(notebook, estado):
         entrada_duracao.insert(0, processo.duracao)
         entrada_prioridade.delete(0, tk.END)
         entrada_prioridade.insert(0, processo.prioridade.numero)
+
+        if processo.secao_critica is not None:
+            secao_var.set(True)
+            entrada_recurso.delete(0, tk.END)
+            entrada_recurso.insert(0, processo.secao_critica.recurso)
+            entrada_inicio_sc.delete(0, tk.END)
+            entrada_inicio_sc.insert(0, processo.secao_critica.inicio_execucao)
+            entrada_duracao_sc.delete(0, tk.END)
+            entrada_duracao_sc.insert(0, processo.secao_critica.duracao)
+        else:
+            secao_var.set(False)
+            entrada_inicio_sc.delete(0, tk.END)
+            entrada_duracao_sc.delete(0, tk.END)
+
         estado.tarefas.remove(processo)
         atualizar_tabela()
 

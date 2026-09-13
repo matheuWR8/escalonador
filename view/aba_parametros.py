@@ -4,6 +4,8 @@ from tkinter import messagebox, ttk
 from control import simular_escalonamento
 from control.algoritmos.nomes import Algoritmo
 
+_PROTOCOLOS = {"Nenhum": None, "Herança": "heranca", "Teto": "teto"}
+
 
 def construir(notebook, estado, ir_para_resultado, atualizar_resultado):
     frame = ttk.Frame(notebook)
@@ -31,6 +33,12 @@ def construir(notebook, estado, ir_para_resultado, atualizar_resultado):
     entrada_alfa = ttk.Entry(params_frame, width=10)
     entrada_alfa.insert(0, "0")
 
+    protocolo_var = tk.StringVar(value="Nenhum")
+    label_protocolo = ttk.Label(params_frame, text="Protocolo de recurso (R6/R7):")
+    protocolo_frame = ttk.Frame(params_frame)
+    for nome in _PROTOCOLOS:
+        ttk.Radiobutton(protocolo_frame, text=nome, variable=protocolo_var, value=nome).pack(side="left", padx=(0, 10))
+
     def atualizar_campos_visiveis():
         if algoritmo_var.get() == Algoritmo.ROUND_ROBIN.value:
             label_quantum.grid(row=1, column=0, sticky="w", padx=5, pady=5)
@@ -45,6 +53,13 @@ def construir(notebook, estado, ir_para_resultado, atualizar_resultado):
         else:
             label_alfa.grid_forget()
             entrada_alfa.grid_forget()
+
+        if algoritmo_var.get() == Algoritmo.PRIORIDADE_PREEMPTIVO.value:
+            label_protocolo.grid(row=3, column=0, sticky="w", padx=5, pady=5)
+            protocolo_frame.grid(row=3, column=1, columnspan=2, sticky="w", padx=5)
+        else:
+            label_protocolo.grid_forget()
+            protocolo_frame.grid_forget()
 
     for i, alg in enumerate(Algoritmo):
         ttk.Radiobutton(
@@ -79,9 +94,13 @@ def construir(notebook, estado, ir_para_resultado, atualizar_resultado):
                 messagebox.showerror("Erro", "Envelhecimento (α) inválido. Use um número inteiro.")
                 return
 
+        protocolo = None
+        if algoritmo_var.get() == Algoritmo.PRIORIDADE_PREEMPTIVO.value:
+            protocolo = _PROTOCOLOS[protocolo_var.get()]
+
         try:
             _, _, nome_algoritmo, processos_simulados = simular_escalonamento(
-                estado.tarefas, algoritmo_var.get(), quantum_entry, ctx_time, alfa
+                estado.tarefas, algoritmo_var.get(), quantum_entry, ctx_time, alfa, protocolo
             )
         except ValueError as e:
             messagebox.showerror("Erro", str(e))

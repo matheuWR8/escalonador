@@ -1,8 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
 
-from view.diagrama import COR_CTX, COR_ESPERA, COR_EXECUCAO, desenhar_diagrama
+from control import classificar_suspensoes
+from view.diagrama import COR_CTX, COR_ESPERA, COR_EXECUCAO, COR_SUSPENSA, desenhar_diagrama
 from view.estado import UltimoResultado
+
+_TIPO_EXIBICAO = {
+    "bloqueio_direto": "Bloqueio direto",
+    "inversao": "Inversão de prioridades",
+}
 
 
 def construir(notebook, estado):
@@ -21,7 +27,13 @@ def construir(notebook, estado):
 
     legenda = ttk.Frame(frame)
     legenda.pack(pady=2)
-    for cor, texto in ((COR_EXECUCAO, "Execução"), (COR_CTX, "Troca de contexto"), (COR_ESPERA, "Espera")):
+    itens_legenda = (
+        (COR_EXECUCAO, "Execução"),
+        (COR_CTX, "Troca de contexto"),
+        (COR_ESPERA, "Espera"),
+        (COR_SUSPENSA, "Suspensa (recurso)"),
+    )
+    for cor, texto in itens_legenda:
         item = tk.Canvas(legenda, width=14, height=14, highlightthickness=0)
         item.create_rectangle(1, 1, 13, 13, fill=cor, outline=cor)
         item.pack(side="left", padx=(10, 2))
@@ -29,11 +41,20 @@ def construir(notebook, estado):
 
     canvas_frame = ttk.Frame(frame)
     canvas_frame.pack(padx=10, pady=5, fill="both", expand=True)
-    canvas = tk.Canvas(canvas_frame, bg="white", height=260)
+    canvas = tk.Canvas(canvas_frame, bg="white", height=220)
     scroll_x = ttk.Scrollbar(canvas_frame, orient="horizontal", command=canvas.xview)
     canvas.configure(xscrollcommand=scroll_x.set)
     canvas.pack(side="top", fill="both", expand=True)
     scroll_x.pack(side="bottom", fill="x")
+
+    recursos_frame = ttk.LabelFrame(frame, text="Bloqueios por recurso (R5)")
+    colunas_recursos = ("tarefa", "recurso", "inicio", "fim", "tipo")
+    titulos_recursos = ("Tarefa", "Recurso", "Início", "Fim", "Classificação")
+    tabela_recursos = ttk.Treeview(recursos_frame, columns=colunas_recursos, show="headings", height=4)
+    for col, titulo in zip(colunas_recursos, titulos_recursos):
+        tabela_recursos.heading(col, text=titulo)
+        tabela_recursos.column(col, anchor="center", width=100)
+    tabela_recursos.pack(padx=5, pady=5, fill="x")
 
     def atualizar(processos, nome_algoritmo, quantum, ctx_time):
         estado.ultimo_resultado = UltimoResultado(processos, nome_algoritmo, quantum, ctx_time)
@@ -66,5 +87,24 @@ def construir(notebook, estado):
         )
 
         desenhar_diagrama(canvas, processos)
+
+        suspensoes = classificar_suspensoes(processos)
+        tabela_recursos.delete(*tabela_recursos.get_children())
+        if suspensoes:
+            recursos_frame.pack(padx=10, pady=(0, 10), fill="x")
+            for ev in suspensoes:
+                tabela_recursos.insert(
+                    "",
+                    "end",
+                    values=(
+                        f"Tarefa {ev['tarefa']}",
+                        ev["recurso"],
+                        ev["inicio"],
+                        ev["fim"],
+                        _TIPO_EXIBICAO[ev["tipo"]],
+                    ),
+                )
+        else:
+            recursos_frame.pack_forget()
 
     return frame, atualizar
