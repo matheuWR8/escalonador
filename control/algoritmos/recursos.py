@@ -60,6 +60,7 @@ def classificar_suspensoes(processos):
     for tarefa in processos:
         if tarefa.secao_critica is None:
             continue
+        recurso = tarefa.secao_critica.recurso
         for periodo in tarefa.processamentos:
             if periodo.tipo != "Suspensa":
                 continue
@@ -67,12 +68,13 @@ def classificar_suspensoes(processos):
                 per.tipo == "Execução" and periodo.inicio <= per.inicio < periodo.fim
                 for outra in processos
                 if outra is not tarefa
+                and not (outra.secao_critica is not None and outra.secao_critica.recurso == recurso)
                 for per in outra.processamentos
             )
             resultado.append(
                 {
                     "tarefa": tarefa.id,
-                    "recurso": tarefa.secao_critica.recurso,
+                    "recurso": recurso,
                     "inicio": periodo.inicio,
                     "fim": periodo.fim,
                     "tipo": "inversao" if terceiros_rodaram else "bloqueio_direto",
